@@ -385,7 +385,7 @@ meal = st.session_state.meal_data
                 
 
 meal = st.session_state.meal_data
-                time.sleep(0.5)
+time.sleep(0.5)
 
             if meal is None:
 
