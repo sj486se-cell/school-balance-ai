@@ -57,4 +57,4 @@ def get_meal(edu_code, school_code, meal_date):
     try:
         url = f"[https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&ATPT_OFCDC_SC_CODE=](https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&ATPT_OFCDC_SC_CODE=){edu_code}&SD_SCHUL_CODE={school_code}&MLSV_YMD={meal_date}"
         if NEIS_API_KEY and NEIS_API_KEY != "여기에_NEIS_API_KEY를_입력하세요": 
-            url += f"&KEY={NEIS_API
+            url += f"&KEY={NEIS_API}
