@@ -245,15 +245,28 @@ with st.sidebar:
 # ============================================================
 # 데이터 연동 로직
 # ============================================================
-# 기존의 데이터 수집 로직 부분을 이렇게 살짝 수정해 보세요.
 if mode == "🏫 학교 급식 (NEIS API)" and meal_btn:
     with st.spinner("데이터 동기화 중..."):
         schools = search_school(school_keyword)
         if schools:
             target = schools[0]
-            # [수정] 날짜 포맷이 정상인지 확인하고, API 호출
             formatted_date = meal_date.strftime("%Y%m%d")
             meal = get_meal(target["edu_code"], target["school_code"], formatted_date)
+            
+            if meal:
+                st.session_state.menu_list = meal["menu"]
+                nutrition = parse_nutrition(meal["nutrition"])
+                match = re.search(r"[\d.]+", meal["calorie"])
+                st.session_state.current_cal = float(match.group()) if match else 0.0
+                st.session_state.current_score = calculate_score(nutrition)
+                st.session_state.current_food_name = f"{target['name']} 급식"
+                st.session_state.current_nutrition = nutrition
+                st.session_state.analyzed = True
+            else:
+                st.warning("🍽️ 선택하신 날짜의 급식 정보가 API 서버에 존재하지 않습니다.")
+                st.info("💡 **팁:** 학교 급식실 사정에 따라 데이터가 지연될 수 있습니다. 🏠 **'자율 식단 모드'**로 전환하시면 원하시는 어떤 메뉴든 AI가 즉시 영양 분석을 도와드립니다!")
+        else:
+            st.error("학교를 찾을 수 없습니다.")
             
             if meal:
                 # 데이터가 성공적으로 들어왔을 때
