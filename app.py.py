@@ -1051,192 +1051,83 @@ if "diet_history" not in st.session_state:
 # ============================================================
 
 
-if mode == "🏠 자율 식단":
-
-
-    if analyze_btn and user_food.strip() != "":
-
-
-        if "diet_result" in st.session_state:
-
+if (
+    mode == "🏠 자율 식단"
+    and "diet_result" in st.session_state
+):
 
             result = st.session_state.diet_result
-
-
             today = str(datetime.date.today())
-
-
             new_record = {
-
-
                 "날짜": today,
-
-
                 "음식": user_food,
-
-
                 "칼로리(kcal)": result["calorie"],
-
-
                 "탄수화물(g)": result["탄수화물"],
-
-
                 "단백질(g)": result["단백질"],
-
-
                 "지방(g)": result["지방"],
-
-
                 "Health Score": result["score"]
-
             }
-
-
-
             duplicate = False
-
-
-
             for item in st.session_state.diet_history:
-
-
                 if (
-
                     item["날짜"] == today
-
                     and item["음식"] == user_food
-
                 ):
-
                     duplicate = True
-
-
-
             if duplicate == False:
-
-
                 st.session_state.diet_history.append(
                     new_record
                 )
-
-
-
 # ============================================================
 # 기록 화면
 # ============================================================
-
-
 st.markdown("---")
-
-
 st.header(
     "📅 나의 식단 기록 & 건강 리포트"
 )
-
-
-
 if len(st.session_state.diet_history) > 0:
-
-
-
     history_df = pd.DataFrame(
         st.session_state.diet_history
     )
-
-
-
     st.subheader(
         "📋 식단 기록"
     )
-
-
     st.dataframe(
-
         history_df,
-
         use_container_width=True
-
     )
-
-
-
     # 평균 계산
-
-
     avg_score = history_df["Health Score"].mean()
-
-
     avg_calorie = history_df["칼로리(kcal)"].mean()
-
-
-
     col1, col2 = st.columns(2)
-
-
-
     with col1:
-
-
         st.metric(
-
             "평균 Health Score",
-
             f"{avg_score:.1f}점"
-
         )
-
-
-
     with col2:
-
-
         st.metric(
-
             "평균 칼로리",
-
             f"{avg_calorie:.0f} kcal"
-
         )
-
-
-
     # ========================================================
     # 점수 변화 그래프
     # ========================================================
-
-
     st.subheader(
         "📈 건강 점수 변화"
     )
-
-
-
     fig = px.line(
-
         history_df,
-
         x="날짜",
-
         y="Health Score",
-
         markers=True,
-
         title="Health Score 변화"
-
     )
-
-
     fig.update_layout(
-
         height=400
-
     )
-
-
     st.plotly_chart(
-
         fig,
-
         use_container_width=True
 
     )
