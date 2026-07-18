@@ -610,13 +610,13 @@ if mode == "🏫 학교 급식":
 
             st.subheader("📋 오늘의 종합 평가")
 
-            if protein >= 20 and calcium >= 250 and vitamin_c >= 30:
-
-        st.success(
-            "오늘 급식은 성장기 학생에게 적합한 식단입니다.\n\n"
-            "균형 잡힌 영양소를 제공하며,\n"
-            "현재 상태를 유지하면 좋습니다."
-        )
+            # 수정 후 (정상 작동)
+        if protein >= 20 and calcium >= 250 and vitamin_c >= 30:
+            st.success(  # <-- 'if'보다 오른쪽으로 4칸(또는 Tab 1번) 더 들여씁니다!
+                "오늘 급식은 성장기 학생에게 적합한 식단입니다.\n\n"
+                "균형 잡힌 영양소를 제공하며,\n"
+                "현재 상태를 유지하면 좋습니다."
+            )
 
     else:
 
