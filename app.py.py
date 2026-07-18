@@ -12,11 +12,14 @@ st.set_page_config(page_title="School Balance AI", page_icon="🍱", layout="wid
 # ============================================================
 # ★ API KEY 입력 설정
 # ============================================================
+# app.py 상단의 키 설정 부분을 아래와 같이 수정하세요.
 NEIS_API_KEY = "여기에_NEIS_API_KEY를_입력하세요"
-# 반드시 본인이 방금 발급받은 실제 문자열을 넣어야 합니다.
-OPENAI_API_KEY = "sk-proj-AbCdEfG1234567890..."# OpenAI 클라이언트 초기화
-client = OpenAI(api_key=OPENAI_API_KEY)
 
+# 코드에 실제 키를 절대 적지 말고 아래 한 줄로 대체합니다.
+OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"] 
+
+# OpenAI 클라이언트 초기화
+client = OpenAI(api_key=OPENAI_API_KEY)
 # ============================================================
 # CSS 스타일링
 # ============================================================
