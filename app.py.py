@@ -405,7 +405,7 @@ else:
             )
 
 <div class="food-card">
-🍽️ {food}
+f"🍽️ {food}"
 </div>
 """,
                             unsafe_allow_html=True
