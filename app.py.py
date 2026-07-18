@@ -362,7 +362,7 @@ with st.sidebar:
 # ============================================================
 
 if mode == "🏫 학교 급식":
-
+    meal = None   # ✨ 이 줄을 추가해서 meal 변수를 미리 만들어 둡니다!
     if meal_btn:
 
         if selected_school is None:
