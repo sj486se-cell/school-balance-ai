@@ -87,18 +87,24 @@ st.divider()
 def search_school(keyword):
 
     try:
-
-        url = (
-            "https://open.neis.go.kr/hub/schoolInfo"
-            f"?KEY={API_KEY}"
-            "&Type=json"
-            f"&SCHUL_NM={urllib.parse.quote(keyword)}"
-        )
+        # API_KEY가 기본값이면 주소에서 KEY 파라미터를 제외합니다.
+        if API_KEY == "여기에_API_KEY를_입력하세요" or not API_KEY:
+            url = (
+                "https://open.neis.go.kr/hub/schoolInfo"
+                "?Type=json"
+                f"&SCHUL_NM={urllib.parse.quote(keyword)}"
+            )
+        else:
+            url = (
+                "https://open.neis.go.kr/hub/schoolInfo"
+                f"?KEY={API_KEY}"
+                "&Type=json"
+                f"&SCHUL_NM={urllib.parse.quote(keyword)}"
+            )
 
         req = urllib.request.Request(url)
 
         with urllib.request.urlopen(req) as response:
-
             data = json.loads(response.read().decode("utf-8"))
 
         rows = data["schoolInfo"][1]["row"]
@@ -106,20 +112,16 @@ def search_school(keyword):
         schools = []
 
         for row in rows:
-
             schools.append({
-
                 "name": row["SCHUL_NM"],
                 "region": row["ATPT_OFCDC_SC_NM"],
                 "edu_code": row["ATPT_OFCDC_SC_CODE"],
                 "school_code": row["SD_SCHUL_CODE"]
-
             })
 
         return schools
 
     except:
-
         return []
 
 # ============================================================
@@ -127,6 +129,51 @@ def search_school(keyword):
 # ============================================================
 
 def get_meal(edu_code, school_code, meal_date):
+
+    try:
+        # API_KEY가 기본값이면 주소에서 KEY 파라미터를 제외합니다.
+        if API_KEY == "여기에_API_KEY를_입력하세요" or not API_KEY:
+            url = (
+                "https://neis.go.kr"
+                "?Type=json"
+                f"&ATPT_OFCDC_SC_CODE={edu_code}"
+                f"&SD_SCHUL_CODE={school_code}"
+                f"&MLSV_YMD={meal_date}"
+            )
+        else:
+            url = (
+                "https://neis.go.kr"
+                f"?KEY={API_KEY}"
+                "&Type=json"
+                f"&ATPT_OFCDC_SC_CODE={edu_code}"
+                f"&SD_SCHUL_CODE={school_code}"
+                f"&MLSV_YMD={meal_date}"
+            )
+
+        req = urllib.request.Request(url)
+
+        with urllib.request.urlopen(req) as response:
+            data = json.loads(response.read().decode("utf-8"))
+
+        # 기존 코드의 에러 지점 해결: [1]["row"][0] 형태로 정상 접근하도록 수정
+        row = data["mealServiceDietInfo"][1]["row"][0]
+
+        menu = row["DDISH_NM"]
+
+        menu = [
+            re.sub(r"[0-9\.\(\)]", "", food).strip()
+            for food in menu.split("<br/>")
+        ]
+
+        return {
+            "menu": menu,
+            "calorie": row["CAL_INFO"],
+            "nutrition": row["NTR_INFO"]
+        }
+
+    except:
+        return None
+
 
     try:
 
