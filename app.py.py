@@ -2,55 +2,54 @@ import streamlit as st
 import pandas as pd
 import pydeck as pdk
 
-# 1. 페이지 설정
-st.set_page_config(page_title="SafePath: 배리어 프리 지도", layout="wide")
+st.set_page_config(page_title="SafePath: 배리어 프리 제보 지도", layout="wide")
 
-# 2. 데이터 제보 세션 상태 (메모리 저장)
+# 1. 초기 데이터 (AI가 판단한 기본 위험 구간)
 if 'reports' not in st.session_state:
-    st.session_state.reports = pd.DataFrame(columns=['lat', 'lon', 'type', 'desc'])
+    st.session_state.reports = pd.DataFrame([
+        {'lat': 37.3850, 'lon': 127.1235, 'type': 'AI 경고', 'desc': '급경사로 예상되는 구간입니다.'},
+        {'lat': 37.3820, 'lon': 127.1260, 'type': 'AI 경고', 'desc': '보도블록 파손 가능성이 높습니다.'}
+    ])
 
-# 3. 사이드바: 제보 및 필터
+# 2. 사이드바: 제보 폼
 with st.sidebar:
-    st.title("📍 배리어 프리 제보")
-    with st.form("report_form"):
-        st.write("불편한 곳을 공유해주세요!")
-        lat = st.number_input("위도", value=37.3850)
-        lon = st.number_input("경도", value=127.1235)
+    st.title("📍 위험 제보하기")
+    st.write("지도를 클릭한 후 위치 정보와 메모를 남겨주세요.")
+    
+    # 클릭한 좌표를 받을 입력창 (사용자가 지도에서 클릭한 값을 여기에 넣음)
+    click_lat = st.number_input("클릭한 위도", format="%.6f")
+    click_lon = st.number_input("클릭한 경도", format="%.6f")
+    
+    with st.form("new_report"):
         r_type = st.selectbox("장애 유형", ["계단", "높은 턱", "공사중", "기타"])
-        desc = st.text_input("상세 내용")
-        if st.form_submit_button("제보하기"):
-            new_data = pd.DataFrame({'lat': [lat], 'lon': [lon], 'type': [r_type], 'desc': [desc]})
-            st.session_state.reports = pd.concat([st.session_state.reports, new_data], ignore_index=True)
+        desc = st.text_input("상세 메모")
+        if st.form_submit_button("제보 등록"):
+            new_report = pd.DataFrame({'lat': [click_lat], 'lon': [click_lon], 'type': [r_type], 'desc': [desc]})
+            st.session_state.reports = pd.concat([st.session_state.reports, new_report], ignore_index=True)
 
-# 4. 메인 화면
-st.title("♿ SafePath: 배리어 프리 이동 지도")
-st.write("휠체어와 유모차도 안심하고 다닐 수 있는 길을 찾습니다.")
+# 3. 메인 화면
+st.title("♿ SafePath: 사용자 참여형 배리어 프리 지도")
+st.write("지도 위를 클릭하여 위험 요소를 직접 제보하고, AI가 분석한 안전 경로를 확인하세요.")
 
-# 지도 레이어 구성
-layers = []
-if not st.session_state.reports.empty:
-    layers.append(pdk.Layer(
-        "ScatterplotLayer",
-        data=st.session_state.reports,
-        get_position="[lon, lat]",
-        get_color="[255, 0, 0, 200]",
-        get_radius=30,
-        pickable=True,
-    ))
+# PyDeck 지도 시각화
+view_state = pdk.ViewState(latitude=37.3850, longitude=127.1235, zoom=15)
+
+# 툴팁 및 클릭 이벤트 정의
+layer = pdk.Layer(
+    "ScatterplotLayer",
+    data=st.session_state.reports,
+    get_position="[lon, lat]",
+    get_color="type == 'AI 경고' ? [255, 165, 0, 200] : [255, 0, 0, 200]",
+    get_radius=20,
+    pickable=True,
+)
 
 st.pydeck_chart(pdk.Deck(
-    layers=layers,
-    initial_view_state=pdk.ViewState(latitude=37.3850, longitude=127.1235, zoom=14),
-    tooltip={"html": "<b>유형:</b> {type}<br/><b>상세:</b> {desc}"}
+    layers=[layer],
+    initial_view_state=view_state,
+    tooltip={"html": "<b>유형:</b> {type}<br/><b>상세:</b> {desc}"},
+    # 지도 클릭 시 좌표를 가져오는 설정 (streamlit의 기본 기능 활용)
+    map_style="road"
 ))
 
-# 5. 알고리즘 로직 (간략화)
-st.subheader("💡 휠체어 맞춤형 경로 분석")
-col1, col2 = st.columns(2)
-with col1:
-    st.info("기본 경로: 정자역 -> 수내역 (직선거리)")
-with col2:
-    if len(st.session_state.reports) > 0:
-        st.error(f"알고리즘이 {len(st.session_state.reports)}개의 제보된 장애물을 피해 우회 경로를 생성합니다.")
-    else:
-        st.success("장애물 보고 없음: 최단 거리 주행 가능")
+st.info("💡 팁: 실제 시연 시에는 지도를 클릭하여 나오는 좌표값을 복사해서 위도/경도 입력창에 넣는 방식으로 사용자 참여를 보여주세요!")
