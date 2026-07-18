@@ -1,107 +1,73 @@
 import streamlit as st
+import pandas as pd
 
-# 1. 웹 브라우저 탭 및 메인 제목 설정
-st.set_page_config(page_title="에너지 다이어트", page_icon="⚡")
-st.title("⚡ 우리 집 에너지 다이어트 (SDGs 7, 13번)")
-st.write("가전제품 하루 사용 시간을 입력하면, 한 달 예상 전기요금과 탄소 배출량을 분석합니다.")
+# 1. 앱 기본 설정
+st.set_page_config(page_title="안전 경로 시뮬레이터", page_icon="🗺️")
+st.title("🗺️ 보행 약자 맞춤형 안전 경로 시뮬레이터")
+st.write("사용자의 이동 조건에 맞춰 알고리즘이 **가장 안전하고 최적화된 경로**를 분석하여 추천합니다.")
 
-# 2. 기초 데이터: 가전제품별 평균 소비전력 (단위: W)
-appliances = {
-    "에어컨(스탠드)": 1800,
-    "TV": 150,
-    "냉장고": 200,
-    "컴퓨터": 300,
-    "전자레인지": 1000
+st.divider()
+
+# 2. 사용자 입력 받기
+st.header("👤 이동 조건 설정")
+user_type = st.radio(
+    "어떤 조건으로 이동하시나요?", 
+    ["🚶 일반 보행자", "👩‍🦽 휠체어/유모차 탑승자", "🌙 심야 안심 귀가"]
+)
+
+# 3. 파이썬 딕셔너리: 경로 데이터베이스 구축
+# distance: 거리, stairs: 계단 유무, steep: 경사도, lighting: 가로등 밝기
+routes = {
+    "경로 A (최단거리 골목길)": {"distance": 500, "stairs": True, "steep": False, "lighting": "low"},
+    "경로 B (조금 먼 우회로)": {"distance": 800, "stairs": False, "steep": False, "lighting": "medium"},
+    "경로 C (큰길 상가거리)": {"distance": 1000, "stairs": False, "steep": True, "lighting": "high"}
 }
 
-# 3. 사용자 입력 받기 (웹 화면에 슬라이더 생성)
-st.subheader("💡 가전제품 사용량 입력")
-usage_hours = {}
-for app, power in appliances.items():
-    usage_hours[app] = st.slider(f"{app} (하루 사용 시간)", 0.0, 24.0, 0.0, 0.5)
-
-# 4. 총 전력량 계산 로직
-def calculate_energy(usage_dict):
-    total_wh = 0
-    for app, hours in usage_dict.items():
-        total_wh += appliances[app] * hours
-    return (total_wh * 30) / 1000
-
-# 5. 맞춤형 피드백 생성 로직 (내용 대폭 강화)
-def get_custom_feedback(monthly_kwh, usage_dict):
-    if monthly_kwh == 0:
-        return "사용 시간을 입력하고 분석 버튼을 눌러주세요!"
+# 4. 안전 가중치 알고리즘 (핵심 로직)
+scores = {}
+for name, info in routes.items():
+    # 기본 위험도: 거리가 멀수록 조금씩 증가 (100m당 10점)
+    score = info["distance"] * 0.1 
     
-    # [1단계] 등급별 상세 피드백
-    if monthly_kwh <= 150:
-        level_msg = """🌱 **[우수] 환경 지킴이! 지구를 위한 완벽한 습관입니다.**
-현재의 전력 사용량은 매우 이상적인 수준입니다. 지금처럼만 꾸준히 실천해 주신다면 온실가스 감축에 큰 기여를 할 수 있습니다. 불필요한 대기전력 차단과 효율적인 가전제품 사용이 이미 습관화되어 있으시네요. 앞으로도 가족과 친구들에게 좋은 모범이 되어주세요!"""
-    elif monthly_kwh <= 300:
-        level_msg = """⚠️ **[주의] 조금만 더 신경 쓰면 환경과 지갑을 지킬 수 있습니다.**
-일상적으로 전기를 사용하고 계시지만, 새어나가는 에너지를 잡을 수 있는 여지가 남아있습니다. 사용하지 않는 플러그를 뽑거나, 안 쓰는 방의 불을 바로바로 끄는 등 일상 속 작은 실천을 더해보세요. 다음 달에는 '우수' 등급에 충분히 도전하실 수 있습니다!"""
-    else:
-        level_msg = """🚨 **[위험] 에너지 다이어트가 시급합니다!**
-현재 전력 소비와 탄소 배출량이 평균을 크게 웃돌고 있어 즉각적인 개선이 필요합니다. 이대로라면 환경에 부담을 줄 뿐만 아니라, 누진세가 적용되어 전기요금 폭탄을 맞을 수도 있습니다. 아래 제시된 가장 시급한 조치를 참고하여 오늘부터 당장 에너지 절약 계획을 실천해 보세요."""
-
-    # [2단계] 전기를 가장 많이 소모한 기기 찾기
-    max_app = ""
-    max_power = 0
-    for app, hours in usage_dict.items():
-        power = appliances[app] * hours
-        if power > max_power:
-            max_power = power
-            max_app = app
+    # 휠체어/유모차 탑승자 조건 알고리즘
+    if "휠체어" in user_type:
+        if info["stairs"]:
+            score += 9999  # 계단이 있으면 이동 불가 (무한대 페널티)
+        if info["steep"]:
+            score += 50    # 경사가 심하면 가중치 부여
             
-    # [3단계] 기기별 맞춤형 상세 개선 방법
-    if max_app == "에어컨(스탠드)":
-        action_msg = """👉 **집중 관리 대상: 에어컨 사용 습관 개선**
-현재 전력 소비의 가장 큰 원인은 에어컨입니다. 에어컨은 전력 소모가 매우 큰 기기이므로 현명하게 사용해야 합니다.
-* **적정 온도 설정:** 희망 온도를 1도만 높여도 에너지를 약 7%나 절약할 수 있습니다. 26도 내외로 설정해 주세요.
-* **보조 기기 활용:** 에어컨을 켤 때 선풍기나 서큘레이터를 함께 사용하면 시원한 공기가 방안에 빠르게 순환되어 냉방 효율이 훨씬 올라갑니다.
-* **필터 청소:** 2주에 한 번씩 필터를 청소해 주면 냉방 효과가 60% 이상 좋아집니다."""
+    # 심야 안심 귀가 조건 알고리즘
+    if "심야" in user_type:
+        if info["lighting"] == "low":
+            score += 100   # 어두운 골목길은 매우 위험
+        elif info["lighting"] == "high":
+            score -= 30    # 밝은 길은 안전 점수 혜택
+            
+    scores[name] = score
 
-    elif max_app == "전자레인지":
-        action_msg = """👉 **집중 관리 대상: 전자레인지 대기전력 차단**
-전자레인지는 짧은 시간 사용하지만 순간적인 전력 소모가 엄청납니다. 무엇보다 플러그를 꽂아둘 때 새어나가는 '대기전력'이 상당합니다.
-* **전원 차단:** 사용이 끝난 후에는 반드시 플러그를 뽑아두거나 절전형 멀티탭 스위치를 꺼서 전원을 완전히 차단해 주세요.
-* **자연 해동 활용:** 꽁꽁 언 음식이나 고기를 해동할 때는, 사용하기 몇 시간 전에 미리 냉장실로 옮겨 자연 해동을 유도하면 전자레인지 작동 시간을 크게 줄일 수 있습니다."""
+# 가장 위험도 점수가 낮은 최적 경로 찾기
+best_route = min(scores, key=scores.get)
 
-    elif max_app == "컴퓨터":
-        action_msg = """👉 **집중 관리 대상: 컴퓨터 절전 모드 적극 활용**
-컴퓨터 전력 소모량이 상당히 높게 측정되었습니다. 
-* **절전 모드 생활화:** 컴퓨터를 잠깐 안 쓸 때도 그대로 켜두는 경우가 많습니다. 자리를 비울 때는 모니터 화면을 끄거나 '절전 모드'를 설정해 두는 것만으로도 요금을 크게 줄일 수 있습니다.
-* **주변 기기 관리:** 컴퓨터 본체 외에도 모니터, 스피커, 프린터 등 연결된 기기들이 함께 전력을 낭비하지 않도록 멀티탭으로 관리해 주세요."""
+st.divider()
 
-    elif max_app == "TV":
-        action_msg = """👉 **집중 관리 대상: TV 및 셋톱박스 숨은 전력 찾기**
-TV 시청 시간이 길거나, 보지 않는데도 켜둔 채로 방치되는 경우가 많습니다.
-* **화면 밝기 조절:** TV 화면의 밝기를 너무 눈부시지 않게 한 단계만 낮춰도 에너지를 크게 절약할 수 있습니다.
-* **셋톱박스의 배신:** TV 자체보다 연결된 '셋톱박스'가 24시간 켜져 있어 엄청난 대기전력을 잡아먹는 경우가 많습니다. 외출하거나 잠들 때는 반드시 셋톱박스의 전원도 함께 꺼주세요."""
+# 5. 분석 결과 및 데이터 시각화 출력
+st.header("🎯 AI 최적 경로 분석 결과")
 
-    elif max_app == "냉장고":
-        action_msg = """👉 **집중 관리 대상: 냉장고 냉기 꽉 잡아두기**
-냉장고는 24시간 내내 켜져 있어야 하므로 올바른 보관 습관이 제일 중요합니다.
-* **냉장실은 70%만:** 냉장실은 차가운 공기가 잘 순환할 수 있도록 전체 공간의 60~70% 정도만 채우는 것이 효율이 좋습니다.
-* **냉동실은 100% 꽉꽉:** 반대로 냉동실은 얼어있는 음식물들이 서로 냉기를 전달해 온도를 유지하므로 꽉 채워두는 것이 전기 절약에 훨씬 유리합니다.
-* **문 여닫는 횟수 줄이기:** 내용물 목록을 겉에 메모해 두어, 문을 열고 한참 동안 음식을 찾는 습관을 줄여보세요."""
+if scores[best_route] >= 9999:
+    st.error("🚨 선택하신 조건으로 안전하게 이동할 수 있는 경로가 없습니다. 우회로 확보가 시급합니다!")
+else:
+    st.success(f"🏆 추천 안전 경로: **{best_route}**")
+    st.write(f"선택하신 '{user_type}' 조건에서 위험 가중치가 가장 낮은 최적의 경로입니다.")
 
-    else:
-        action_msg = "👉 **가장 시급한 조치:** 안 쓰는 전등과 가전제품의 전원을 바로바로 끄는 습관을 들여보세요!"
+# 시각화를 위해 점수가 너무 높은(9999) 통제 구역은 차트에서 150점으로 보정
+chart_data = {
+    "경로": list(scores.keys()),
+    "위험 점수": [s if s < 9999 else 150 for s in scores.values()]
+}
+df = pd.DataFrame(chart_data)
 
-    return level_msg + "\n\n---\n\n" + action_msg
+st.subheader("📊 경로별 위험도 비교 (낮을수록 안전)")
+# 막대그래프로 시각화
+st.bar_chart(df.set_index("경로"), color="#4CAF50")
 
-# 6. 화면 출력 구성
-if st.button("분석 결과 보기"):
-    monthly_kwh = calculate_energy(usage_hours)
-    estimated_cost = monthly_kwh * 250  
-    carbon_emission = monthly_kwh * 0.4781 
-    
-    st.subheader("📊 이번 달 예상 결과")
-    col1, col2, col3 = st.columns(3)
-    col1.metric("월간 전력 사용량", f"{monthly_kwh:.1f} kWh")
-    col2.metric("예상 전기요금", f"{int(estimated_cost):,} 원")
-    col3.metric("탄소 배출량", f"{carbon_emission:.1f} kg")
-    
-    st.subheader("💡 AI 맞춤형 에너지 솔루션")
-    feedback_text = get_custom_feedback(monthly_kwh, usage_hours)
-    st.info(feedback_text)
+st.info("💡 **알고리즘 요약:** 휠체어 탑승 시 계단 경로를 차단하고, 심야 시간대에는 조도(가로등) 데이터를 분석하여 안전 가중치를 부여했습니다.")
