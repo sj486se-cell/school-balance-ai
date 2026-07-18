@@ -150,11 +150,24 @@ with st.sidebar:
 # ============================================================
 # 공통 변수
 # ============================================================
-current_food_name = ""
-current_score = 0
-current_nutrition = {}
-current_cal = 0.0
-show_ai_button = False
+# ============================================================
+# Streamlit 상태 저장
+# ============================================================
+
+if "current_food_name" not in st.session_state:
+    st.session_state.current_food_name = ""
+
+if "current_score" not in st.session_state:
+    st.session_state.current_score = 0
+
+if "current_nutrition" not in st.session_state:
+    st.session_state.current_nutrition = {}
+
+if "current_cal" not in st.session_state:
+    st.session_state.current_cal = 0.0
+
+if "show_ai_button" not in st.session_state:
+    st.session_state.show_ai_button = False
 
 # ============================================================
 # 데이터 수집
@@ -193,11 +206,17 @@ elif mode == "🏠 자율 식단" and analyze_btn:
             if name in food:
                 for k in total: total[k] += data[k]
                 break
-    current_cal = total["calorie"]
-    current_score = calculate_score(total)
-    current_food_name = user_food
-    current_nutrition = total
-    show_ai_button = True
+st.session_state.current_cal = float(
+    re.search(r"[\d.]+", meal["calorie"]).group()
+) if re.search(r"[\d.]+", meal["calorie"]) else 0.0
+
+st.session_state.current_score = calculate_score(nutrition)
+
+st.session_state.current_food_name = f"{target['name']} 급식"
+
+st.session_state.current_nutrition = nutrition
+
+st.session_state.show_ai_button = True
 
 # ============================================================
 # 메인 분석 리포트
