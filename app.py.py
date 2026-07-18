@@ -404,34 +404,20 @@ else:
                 f"- {food}"
             )
 
-st.markdown(
+        st.markdown(
             f'<div class="food-card">🍽️ {food}</div>',
             unsafe_allow_html=True
         )
 
-with right:
-
-                    st.subheader("📊 기본 정보")
-
-                    st.metric(
-                        "총 칼로리",
-                        meal["calorie"]
-                    )
-
-                    st.write("### 교육청 영양 정보")
-
-                    st.info(
-                        meal["nutrition"]
-                    )
-
-else:
-
-    st.info(
-        "👈 왼쪽 메뉴에서 오늘 먹은 음식을 입력하세요."
-    )
-# ============================================================
-# PART 3 : Health Score + 영양 그래프 + AI 분석
-# ============================================================
+    with right:
+        st.subheader("📊 기본 정보")
+        
+        st.metric(
+            "총 칼로리",
+            meal["calorie"]
+        )
+        
+        st.write("### 교육청 영양 정보")
 
 if mode == "🏫 학교 급식":
 
