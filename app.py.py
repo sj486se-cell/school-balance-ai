@@ -575,7 +575,7 @@ if mode == "🏫 학교 급식":
 # PART 4 : AI 추천 음식 & 영양 리포트
 # ============================================================
 
-if mode == "🏫 학교 급식":
+if mode in ["🏫 학교 급식", "🏠 자율 식단"]:
 
     if meal_btn and selected_school is not None:
 
