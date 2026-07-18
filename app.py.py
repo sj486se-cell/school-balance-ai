@@ -409,7 +409,7 @@ st.markdown(
             unsafe_allow_html=True
         )
 
-                with right:
+            with right:
 
                     st.subheader("📊 기본 정보")
 
