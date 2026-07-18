@@ -16,8 +16,7 @@ st.set_page_config(page_title="School Balance AI", page_icon="🍱", layout="wid
 NEIS_API_KEY = "여기에_NEIS_API_KEY를_입력하세요"
 
 # 코드에 실제 키를 절대 적지 말고 아래 한 줄로 대체합니다.
-OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"] 
-
+OPENAI_API_KEY = "sk-proj-이부분에는오직영문과숫자특수문자만들어가야합니다"
 # OpenAI 클라이언트 초기화
 client = OpenAI(api_key=OPENAI_API_KEY)
 # ============================================================
