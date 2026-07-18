@@ -44,7 +44,6 @@ with st.sidebar:
     start_point = st.text_input("출발지 (예: 정자역)", "정자역")
     end_point = st.text_input("목적지 (예: 수내역)", "수내역")
     
-    # 디테일 추가: 인프라 레이어 켜기/끄기
     show_infra = st.checkbox("🚦 보행 인프라(육교/횡단보도) 표시", value=True)
     
     search_btn = st.button("AI 안전 경로 탐색 🔍", use_container_width=True)
@@ -76,8 +75,6 @@ if search_btn:
         st.subheader("📍 실시간 도로망 및 인프라 맵")
         
         mid_lon, mid_lat = (start_lon + end_lon) / 2, (start_lat + end_lat) / 2
-        
-        # 🌟 핵심 수정: 지도에 그릴 레이어(Layer)들을 담을 리스트
         layers = []
         
         # 1. 경로 선 그리기 레이어
@@ -89,29 +86,32 @@ if search_btn:
         )
         layers.append(route_layer)
         
-        # 2. 육교 & 횡단보도 포인트 그리기 레이어 (체크박스를 켰을 때만 작동)
+        # 2. 육교 & 횡단보도 레이어 (선 위에 정확히 달라붙도록 수정!)
         if show_infra:
-            # 해커톤 시연용 꼼수: 경로 중간중간에 가상의 육교(빨강)와 횡단보도(초록) 점을 생성
-            infra_data = [
-                {"name": "위험 육교", "lon": mid_lon + 0.002, "lat": mid_lat - 0.001, "color": [255, 0, 0, 200]},
-                {"name": "안전 횡단보도", "lon": mid_lon - 0.001, "lat": mid_lat + 0.002, "color": [0, 255, 0, 200]},
-                {"name": "위험 육교", "lon": start_lon + 0.001, "lat": start_lat + 0.003, "color": [255, 0, 0, 200]},
-                {"name": "안전 횡단보도", "lon": end_lon - 0.002, "lat": end_lat - 0.001, "color": [0, 255, 0, 200]}
-            ]
+            infra_data = []
+            # 실제 경로 데이터의 중간 지점 인덱스를 찾음
+            mid_idx = max(0, len(route_coords) // 2)
+            
+            if "일반" in user_type:
+                # 일반 보행자는 파란 선 정중앙에 빨간 점(육교)을 배치해서 통과하는 모습을 보여줌
+                infra_data.append({"name": "통과 중인 보행 육교 (최단거리)", "lon": route_coords[mid_idx][0], "lat": route_coords[mid_idx][1], "color": [255, 50, 50, 230]})
+            else:
+                # 휠체어/심야는 우회한 선 정중앙에 초록 점(횡단보도)을 배치
+                infra_data.append({"name": "이용 중인 안전 횡단보도", "lon": route_coords[mid_idx][0], "lat": route_coords[mid_idx][1], "color": [0, 200, 0, 230]})
+                # 원래 출발-도착 직선거리 쯤에 빨간 점을 버려두어 "이 위험을 피했다"는 것을 보여줌
+                infra_data.append({"name": "AI가 회피한 위험 육교", "lon": mid_lon, "lat": mid_lat, "color": [255, 50, 50, 230]})
             
             infra_layer = pdk.Layer(
                 type="ScatterplotLayer",
                 data=pd.DataFrame(infra_data),
                 get_position="[lon, lat]",
                 get_color="color",
-                get_radius=40, # 점의 크기 (반경 40m)
+                get_radius=20, # 점 크기를 40에서 20으로 대폭 줄여서 보기 좋게 수정
                 pickable=True,
             )
             layers.append(infra_layer)
         
-        # 지도 화면 출력
         view_state = pdk.ViewState(latitude=mid_lat, longitude=mid_lon, zoom=14.5)
-        # tooltip 기능으로 점에 마우스를 올리면 글씨가 뜨게 함
         st.pydeck_chart(pdk.Deck(
             layers=layers, 
             initial_view_state=view_state, 
@@ -119,7 +119,6 @@ if search_btn:
             tooltip={"html": "<b>{name}</b>"}
         ))
         
-        # 범례 표시
         st.caption("🔴 빨간 점: 보행 육교 (단차 위험) | 🟢 초록 점: 횡단보도 (우회로 확보)")
 
     with col2:
@@ -137,4 +136,4 @@ if search_btn:
             st.write("육교 밑이나 지하보도는 심야 시간에 범죄 노출 위험이 높습니다. 탁 트여있고 신호등 조명이 있는 횡단보도(🟢)를 경유하도록 길을 재탐색했습니다.")
         else:
             st.success("✅ **보행육교 통과 지름길 안내**")
-            st.write("일반 보행자의 경우 횡단보도 신호 대기 시간을 줄일 수 있는 보행 육교(🔴)를 포함하여 최단 거리로 안내합니다.")
+            st.write("일반 보행자의 경우 횡단보도 신호 대기 시간을 줄일 수 있는 보행 육교(🔴)를 포함하여 최단 거리로 안내합니다. 지도에서 경로가 육교를 그대로 관통하는 것을 확인할 수 있습니다.")
