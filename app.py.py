@@ -1,58 +1,32 @@
-import streamlit as st
-import pandas as pd
-import pydeck as pdk
-import urllib.parse
-import urllib.request
-import json
+import networkx as nx
 
-st.set_page_config(page_title="SafePath AI", layout="wide")
+# 1. 그래프 생성 (지도 데이터 구조화)
+G = nx.Graph()
 
-def get_coordinates(address):
-    try:
-        url = "https://nominatim.openstreetmap.org/search?q=" + urllib.parse.quote(address) + "&format=json&limit=1"
-        req = urllib.request.Request(url, headers={'User-Agent': 'SafePath_App'})
-        with urllib.request.urlopen(req) as response:
-            data = json.loads(response.read().decode())
-            if data: return float(data[0]['lon']), float(data[0]['lat'])
-    except: pass
-    return 127.1235, 37.3850
+# 2. 노드와 엣지 정의 (노드: 위치, 엣지: 연결 경로)
+# weight: 거리, is_accessible: 계단/턱 유무 (True: 통행 가능, False: 장애물 있음)
+edges = [
+    ('입구', '광장', {'weight': 10, 'is_accessible': True}),
+    ('광장', '카페', {'weight': 20, 'is_accessible': False}), # 카페 가는 길에 계단 존재
+    ('광장', '우회로', {'weight': 15, 'is_accessible': True}),
+    ('우회로', '카페', {'weight': 15, 'is_accessible': True})
+]
 
-def get_route(waypoints):
-    coords_str = ";".join([f"{lon},{lat}" for lon, lat in waypoints])
-    url = f"http://router.project-osrm.org/route/v1/foot/{coords_str}?overview=full&geometries=geojson"
-    try:
-        with urllib.request.urlopen(url) as response:
-            data = json.loads(response.read().decode())
-            return data["routes"][0]["geometry"]["coordinates"]
-    except: return waypoints
+for u, v, attr in edges:
+    G.add_edge(u, v, **attr)
 
-with st.sidebar:
-    user_type = st.radio("보행자 조건", ["🚶 일반 보행자", "👩‍🦽 휠체어/유모차", "🌙 심야 안심 귀가"])
-    start = st.text_input("출발지", "정자역")
-    end = st.text_input("목적지", "수내역")
-    btn = st.button("탐색 시작 🔍")
-
-st.title("🗺️ SafePath AI")
-
-if btn:
-    s_lon, s_lat = get_coordinates(start)
-    e_lon, e_lat = get_coordinates(end)
+# 3. 교통약자용 최적 경로 탐색 함수
+def get_accessible_path(graph, start, end):
+    # 장애물이 있는 경로는 가중치를 매우 높게 설정 (피하도록 함)
+    for u, v, data in graph.edges(data=True):
+        if not data['is_accessible']:
+            # 장애물이 있으면 가중치를 무한대(또는 매우 큰 값)로 변경
+            graph[u][v]['weight'] = 999 
     
-    # 일반 보행자는 직선, 나머지는 횡단보도 경유
-    if "일반" in user_type:
-        path = get_route([[s_lon, s_lat], [e_lon, e_lat]])
-        color = [0, 100, 255]
-    else:
-        # 정자역-수내역 중간쯤의 임의 경유지(횡단보도 느낌)를 강제로 추가하여 우회
-        mid_lon, mid_lat = (s_lon + e_lon) / 2 + 0.002, (s_lat + e_lat) / 2 + 0.002
-        path = get_route([[s_lon, s_lat], [mid_lon, mid_lat], [e_lon, e_lat]])
-        color = [255, 75, 75]
-    
-    # 에러 방지를 위한 데이터 검증
-    if path and len(path) > 1:
-        st.pydeck_chart(pdk.Deck(
-            layers=[pdk.Layer("PathLayer", data=pd.DataFrame({"path": [path], "color": [color]}), get_color="color", width_min_pixels=6, get_path="path")],
-            initial_view_state=pdk.ViewState(latitude=(s_lat+e_lat)/2, longitude=(s_lon+e_lon)/2, zoom=15)
-        ))
-    else:
-        st.error("경로 탐색에 실패했습니다. 다른 지역명을 입력해보세요.")
+    # 다익스트라 알고리즘으로 최단 경로 탐색
+    path = nx.shortest_path(graph, source=start, target=end, weight='weight')
+    return path
+
+# 실행
+path = get_accessible_path(G, '입구', '카페')
+print(f"교통약자를 위한 추천 경로: {' -> '.join(path)}")
