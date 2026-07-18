@@ -387,26 +387,23 @@ meal = st.session_state.meal_data
 meal = st.session_state.meal_data
 time.sleep(0.5)
 
-            if meal is None:
+if meal is None:
+    st.warning("해당 날짜의 급식 정보가 없습니다.")
+else:
+    st.success(
+        f"✅ {selected_school['name']} 급식 조회 완료"
+    )
+    
+    left, right = st.columns([2, 1])
+    
+    with left:
+        st.subheader("🍱 오늘의 급식")
+        
+        for food in meal["menu"]:
+            st.markdown(
+                f"- {food}"
+            )
 
-                st.warning("해당 날짜의 급식 정보가 없습니다.")
-
-            else:
-
-                st.success(
-                    f"✅ {selected_school['name']} 급식 조회 완료"
-                )
-
-                left, right = st.columns([2,1])
-
-                with left:
-
-                    st.subheader("🍱 오늘의 급식")
-
-                    for food in meal["menu"]:
-
-                        st.markdown(
-                            f"""
 <div class="food-card">
 🍽️ {food}
 </div>
