@@ -578,13 +578,16 @@ if mode == "🏫 학교 급식":
 if mode == "🏫 학교 급식":
 
     if "meal_data" in st.session_state:
-            meal = st.session_state.meal_data
-                if meal is not None:
 
-            nutrition = parse_nutrition(meal["nutrition"])
+        meal = st.session_state.meal_data
 
-            st.markdown("---")
-            st.header("🥗 AI 맞춤 영양 리포트")
+        if meal is not None:
+
+            nutrition = parse_nutrition(
+                meal["nutrition"]
+            )
+
+            st.write("영양 분석 시작")
 
             protein = nutrition.get("단백질", 0)
             fat = nutrition.get("지방", 0)
