@@ -386,6 +386,7 @@ if mode == "🏫 학교 급식":
 
 if meal is None:
     st.warning("해당 날짜의 급식 정보가 없습니다.")
+    st.stop()  # ✨ 데이터가 없으면 여기서 실행을 즉시 중단시켜 아래 경고문이 안 뜨게 합니다
 else:
     st.success(
         f"✅ {selected_school['name']} 급식 조회 완료"
