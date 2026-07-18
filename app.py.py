@@ -129,6 +129,22 @@ def generate_ai_report_stream(food_name, score, leftover):
         time.sleep(0.01)
 
 # ============================================================
+# 세션 상태 초기화 (버튼 초기화 문제 해결의 핵심!)
+# ============================================================
+if "analyzed" not in st.session_state:
+    st.session_state.analyzed = False
+if "current_food_name" not in st.session_state:
+    st.session_state.current_food_name = ""
+if "current_score" not in st.session_state:
+    st.session_state.current_score = 0
+if "current_nutrition" not in st.session_state:
+    st.session_state.current_nutrition = {}
+if "current_cal" not in st.session_state:
+    st.session_state.current_cal = 0.0
+if "menu_list" not in st.session_state:
+    st.session_state.menu_list = []
+
+# ============================================================
 # 사이드바
 # ============================================================
 with st.sidebar:
@@ -146,23 +162,14 @@ with st.sidebar:
 
     if mode == "🏫 학교 급식":
         school_keyword = st.text_input("학교 검색", "서현중학교")
-        meal_date = st.date_input("급식 날짜", datetime.date(2026, 7, 2))
+        meal_date = st.date_input("급식 날짜", datetime.date.today())
         meal_btn = st.button("🍱 통합 분석 시작", use_container_width=True)
     else:
         user_food = st.text_area("오늘 먹은 음식", "불닭볶음면, 참치김밥, 콜라")
         analyze_btn = st.button("🤖 통합 분석 시작", use_container_width=True)
 
 # ============================================================
-# 공통 변수
-# ============================================================
-current_food_name = ""
-current_score = 0
-current_nutrition = {}
-current_cal = 0.0
-show_ai_button = False
-
-# ============================================================
-# 데이터 수집
+# 데이터 수집 및 상태 저장
 # ============================================================
 if mode == "🏫 학교 급식" and meal_btn:
     with st.spinner("급식 및 생체 데이터 분석 중..."):
@@ -171,15 +178,16 @@ if mode == "🏫 학교 급식" and meal_btn:
             target = schools[0]
             meal = get_meal(target["edu_code"], target["school_code"], meal_date.strftime("%Y%m%d"))
             if meal:
-                st.success(f"✅ {target['name']} 데이터 연동 완료")
-                st.markdown(" ".join([f"`{f}`" for f in meal["menu"]]))
+                st.session_state.menu_list = meal["menu"]
                 nutrition = parse_nutrition(meal["nutrition"])
                 match = re.search(r"[\d.]+", meal["calorie"])
-                current_cal = float(match.group()) if match else 0.0
-                current_score = calculate_score(nutrition)
-                current_food_name = f"{target['name']} 급식"
-                current_nutrition = nutrition
-                show_ai_button = True
+                
+                # 세션 상태에 저장
+                st.session_state.current_cal = float(match.group()) if match else 0.0
+                st.session_state.current_score = calculate_score(nutrition)
+                st.session_state.current_food_name = f"{target['name']} 급식"
+                st.session_state.current_nutrition = nutrition
+                st.session_state.analyzed = True
             else:
                 st.error("해당 날짜의 급식 정보를 찾을 수 없습니다.")
         else: 
@@ -204,32 +212,42 @@ elif mode == "🏠 자율 식단" and analyze_btn:
                 for k in total: 
                     total[k] += data[k]
                 break
-    current_cal = total["calorie"]
-    current_score = calculate_score(total)
-    current_food_name = user_food
-    current_nutrition = total
-    show_ai_button = True
+    
+    # 세션 상태에 저장
+    st.session_state.menu_list = foods
+    st.session_state.current_cal = total["calorie"]
+    st.session_state.current_score = calculate_score(total)
+    st.session_state.current_food_name = user_food
+    st.session_state.current_nutrition = total
+    st.session_state.analyzed = True
 
 # ============================================================
-# 메인 분석 리포트
+# 메인 분석 리포트 화면
 # ============================================================
-if show_ai_button:
+# 세션 상태에 분석 데이터가 있을 때만 화면 렌더링
+if st.session_state.analyzed:
+    
+    if mode == "🏫 학교 급식" and st.session_state.menu_list:
+        st.success(f"✅ {st.session_state.current_food_name} 데이터 연동 완료")
+        st.markdown(" ".join([f"`{f}`" for f in st.session_state.menu_list]))
+        
     st.header("📊 기초 영양 지표")
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("💯 Health Score", f"{current_score}점")
-    c2.metric("제공된 총 칼로리", f"{current_cal} kcal")
-    c3.metric("탄수화물", f"{current_nutrition.get('탄수화물', 0)}g")
-    c4.metric("지방", f"{current_nutrition.get('지방', 0)}g")
-    st.progress(current_score / 100)
+    c1.metric("💯 Health Score", f"{st.session_state.current_score}점")
+    c2.metric("제공된 총 칼로리", f"{st.session_state.current_cal} kcal")
+    c3.metric("탄수화물", f"{st.session_state.current_nutrition.get('탄수화물', 0)}g")
+    c4.metric("지방", f"{st.session_state.current_nutrition.get('지방', 0)}g")
+    st.progress(st.session_state.current_score / 100)
 
     st.markdown("---")
     st.header("🔬 융합 과학: 인체 에너지 & 기후 위기 동시 해결 시뮬레이션")
     st.caption("섭취한 에너지는 '체력 증진 처방'으로, 낭비된 음식물은 '열역학 방정식'을 통해 환경 기여도로 계산합니다.")
     
+    # 💥 이 버튼을 눌러도 전체 화면이 초기화되지 않음!
     if st.button("✨ 초고속 AI 통합 시뮬레이션 가동", type="primary"):
         with st.container():
             st.markdown('<div class="ai-report">', unsafe_allow_html=True)
-            st.write_stream(generate_ai_report_stream(current_food_name, current_score, leftover_rate))
+            st.write_stream(generate_ai_report_stream(st.session_state.current_food_name, st.session_state.current_score, leftover_rate))
             st.markdown('</div>', unsafe_allow_html=True)
             
             col_phys, col_eco = st.columns(2)
@@ -240,7 +258,7 @@ if show_ai_button:
                 st.write("잉여 칼로리를 **줄(Joule)**로 변환하여 물리적 '일'을 계산합니다.")
                 st.latex(r"W = \Delta E_p = m \cdot g \cdot h")
                 
-                actual_cal = current_cal * (1 - leftover_rate/100)
+                actual_cal = st.session_state.current_cal * (1 - leftover_rate/100)
                 estimated_bmr = 600
                 delta_e_kcal = actual_cal - estimated_bmr
                 
@@ -283,7 +301,7 @@ if show_ai_button:
             st.markdown("### 🧾 최종 처방전 발급")
             col_diet, col_ex = st.columns(2)
             
-            diet_plan = get_dinner_prescription(current_nutrition)
+            diet_plan = get_dinner_prescription(st.session_state.current_nutrition)
             with col_diet:
                 st.markdown(f"""
                 <div class="prescription-card">
