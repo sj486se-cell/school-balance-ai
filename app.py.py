@@ -404,12 +404,10 @@ else:
                 f"- {food}"
             )
 
-<div class="food-card">
-f"🍽️ {food}"
-</div>
-""",
-                            unsafe_allow_html=True
-                        )
+st.markdown(
+            f'<div class="food-card">🍽️ {food}</div>',
+            unsafe_allow_html=True
+        )
 
                 with right:
 
