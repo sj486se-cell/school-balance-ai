@@ -447,7 +447,7 @@ else:
     st.success(
         f"✅ {selected_school['name']} 급식 조회 완료"
     )
-    
+    st.session_state.meal_data = meal
     left, right = st.columns([2, 1])
     
     with left:
@@ -577,8 +577,7 @@ if mode == "🏫 학교 급식":
 
 if mode in ["🏫 학교 급식", "🏠 자율 식단"]:
 
-    if meal_btn and selected_school is not None:
-
+if "meal_data" in st.session_state:
         meal = st.session_state.meal_data
         if meal is not None:
 
