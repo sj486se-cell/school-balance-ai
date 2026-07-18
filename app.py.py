@@ -371,13 +371,13 @@ if mode == "🏫 학교 급식":
 
     else:
 
-    if isinstance(selected_school, dict):
-        with st.spinner("급식 정보를 불러오는 중입니다..."):
-            st.session_state.meal_data = get_meal(
-                selected_school["edu_code"],
-                selected_school["school_code"],
-                meal_date.strftime("%Y%m%d")
-            )
+        if isinstance(selected_school, dict):
+            with st.spinner("급식 정보를 불러오는 중입니다..."):
+                st.session_state.meal_data = get_meal(
+                    selected_school["edu_code"],
+                    selected_school["school_code"],
+                    meal_date.strftime("%Y%m%d")
+                )
     else:
         st.error("선택된 학교 정보가 올바르지 않습니다. 다시 선택해 주세요.")
         st.stop()
