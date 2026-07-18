@@ -371,15 +371,15 @@ if mode == "🏫 학교 급식":
 
     else:
 
-with st.spinner("급식 정보를 불러오는 중입니다..."):
+        with st.spinner("급식 정보를 불러오는 중입니다..."):
 
-    st.session_state.meal_data = get_meal(
+            st.session_state.meal_data = get_meal(
 
-        selected_school["edu_code"],
-        selected_school["school_code"],
-        meal_date.strftime("%Y%m%d")
+                selected_school["edu_code"],
+                selected_school["school_code"],
+                meal_date.strftime("%Y%m%d")
 
-    )
+            )
 
 meal = st.session_state.meal_data
                 
