@@ -371,7 +371,7 @@ if mode == "🏫 학교 급식":
 
         else:
 
-            with st.spinner("급식 정보를 불러오는 중입니다..."):
+with st.spinner("급식 정보를 불러오는 중입니다..."):
 
     st.session_state.meal_data = get_meal(
 
