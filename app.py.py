@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 import urllib.request
 import urllib.parse
 import json
@@ -20,19 +19,22 @@ API_KEY = "여기에_API_KEY를_입력하세요"
 st.markdown("""
 <style>
 .main-title{ font-size:42px; font-weight:bold; color:#2E8B57; }
-.sub-title{ color:#666666; font-size:18px; }
+.sub-title{ color:#666666; font-size:18px; margin-bottom: 20px;}
 .food-card{ background:#F7F9FA; padding:12px; border-radius:12px; margin-bottom:8px; border-left:6px solid #2E8B57; }
+.physics-card { background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 25px; border-radius: 12px; margin-top: 20px; margin-bottom: 20px; }
 .ai-report { background-color: #f1f8ff; padding: 20px; border-radius: 10px; border: 1px solid #cce5ff; font-size: 16px; line-height: 1.6; margin-bottom: 20px; }
-.prescription-card { background-color: #2b3035; color: #ffffff; padding: 25px; border-radius: 12px; border-left: 8px solid #20c997; box-shadow: 0 4px 10px rgba(0,0,0,0.15); margin-top: 20px;}
-.prescription-title { color: #20c997; margin-top: 0; font-size: 24px; font-weight: bold; border-bottom: 1px solid #495057; padding-bottom: 10px; margin-bottom: 15px;}
-.prescription-text { font-size: 17px; margin-bottom: 8px; color: #e9ecef; }
-.highlight { color: #ffc107; font-weight: bold; }
-.physics-card { background-color: #fdf6e3; border: 1px solid #eee8d5; padding: 20px; border-radius: 10px; margin-top: 20px; margin-bottom: 20px; }
+.prescription-card { background-color: #2b3035; color: #ffffff; padding: 25px; border-radius: 12px; border-left: 8px solid #20c997; box-shadow: 0 4px 10px rgba(0,0,0,0.15); margin-top: 10px;}
+.prescription-title { color: #20c997; margin-top: 0; font-size: 22px; font-weight: bold; border-bottom: 1px solid #495057; padding-bottom: 10px; margin-bottom: 15px;}
+.exercise-card { background-color: #2b3035; color: #ffffff; padding: 25px; border-radius: 12px; border-left: 8px solid #ff6b6b; box-shadow: 0 4px 10px rgba(0,0,0,0.15); margin-top: 10px;}
+.exercise-title { color: #ff6b6b; margin-top: 0; font-size: 22px; font-weight: bold; border-bottom: 1px solid #495057; padding-bottom: 10px; margin-bottom: 15px;}
+.p-text { font-size: 16px; margin-bottom: 8px; color: #e9ecef; }
+.highlight-diet { color: #20c997; font-weight: bold; }
+.highlight-ex { color: #ff6b6b; font-weight: bold; }
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown("<div class='main-title'>🍱 School Balance AI</div>", unsafe_allow_html=True)
-st.markdown("<div class='sub-title'>생체 데이터 예측 및 에너지 열평형 기반 AI 영양 처방 시스템</div>", unsafe_allow_html=True)
+st.markdown("<div class='sub-title'>열역학 기반 영양 밸런스 및 기초 체력 증진 더블 처방 시스템</div>", unsafe_allow_html=True)
 st.divider()
 
 # ============================================================
@@ -77,46 +79,38 @@ def calculate_score(nutrition):
     if nutrition.get("단백질", 0) < 20: score -= 15
     if nutrition.get("지방", 0) > 25: score -= 10
     if nutrition.get("탄수화물", 0) > 150: score -= 10
-    if nutrition.get("칼슘", 0) < 250: score -= 10
-    if nutrition.get("비타민C", 0) < 30: score -= 5
     return max(score, 0)
 
-# 저녁 식단 처방 알고리즘
+# 식단 처방 알고리즘
 def get_dinner_prescription(nutrition):
     carb = nutrition.get("탄수화물", 0)
     prot = nutrition.get("단백질", 0)
     fat = nutrition.get("지방", 0)
     
     if carb > 120 or fat > 30:
-        return {
-            "menu": "연어 아보카도 샐러드 & 찐 단호박 1/2개",
-            "bio_effect": "혈당 스파이크 진정 및 체내 삼투압 밸런스 복구",
-            "reason": "과다 섭취된 정제 탄수화물과 나트륨을 배출하기 위해, '칼륨(K)'과 '오메가-3' 성분을 집중 배치했습니다."
-        }
+        return {"menu": "연어 아보카도 샐러드 & 단호박 1/2개", "effect": "혈당 스파이크 진정 및 삼투압 복구", "reason": "과다 섭취된 정제 탄수화물과 나트륨 배출을 위해 칼륨과 오메가-3를 처방합니다."}
     elif prot < 20:
-        return {
-            "menu": "수비드 닭가슴살 퀴노아 덮밥 & 백김치",
-            "bio_effect": "근육 합성 대사 촉진 및 야간 뇌세포 재생 극대화",
-            "reason": "결핍된 필수 아미노산을 저녁 골든타임에 공급하여, 수면 중 성장 호르몬 분비를 유도하도록 설계했습니다."
-        }
+        return {"menu": "수비드 닭가슴살 퀴노아 덮밥", "effect": "근육 합성 대사 촉진", "reason": "결핍된 필수 아미노산을 골든타임에 공급하여 수면 중 성장 호르몬 분비를 유도합니다."}
     else:
-        return {
-            "menu": "소고기 우둔살 구이 & 신선한 해조류 비빔밥",
-            "bio_effect": "에너지 열평형 유지 및 철분(Fe) 수치 안정화",
-            "reason": "낮 동안 이룩한 완벽한 열평형 상태를 유지하며, 부족하기 쉬운 미네랄을 보충합니다."
-        }
+        return {"menu": "소고기 우둔살 구이 & 해조류 비빔밥", "effect": "에너지 평형 유지 및 철분 안정화", "reason": "낮 동안 이룩한 열평형 상태를 유지하며 부족하기 쉬운 미네랄을 보충합니다."}
 
-# AI 스트리밍 리포트
+# ✨ [신규] 체력 증진 및 활동량 처방 알고리즘
+def get_activity_prescription(delta_kcal):
+    if delta_kcal > 400:
+        return {"exercise": "인터벌 러닝 20분 + 버피 30개", "effect": "최대 산소 섭취량(VO2 max) 증가 및 심폐지구력 극대화", "reason": "대량의 잉여 에너지를 최단 시간에 연소하고, 기초 체력의 핵심인 심폐 능력을 강제적으로 끌어올리는 고강도 처방입니다."}
+    elif delta_kcal > 150:
+        return {"exercise": "자전거 타기 30분 + 스쿼트 3세트", "effect": "하체 근력(대퇴사두근) 강화 및 기초 대사량 증진", "reason": "관절에 무리를 주지 않으면서 가장 큰 근육을 사용하여 에너지를 효율적으로 태우고 활동량을 채웁니다."}
+    elif delta_kcal > 0:
+        return {"exercise": "빠르게 걷기 30분 (파워워킹)", "effect": "생활 속 활동량 증가 및 혈류 순환 촉진", "reason": "일상적인 활동량 부족을 보완하며, 식후 인슐린 저항성을 낮추는 데 가장 효과적인 강도입니다."}
+    else:
+        return {"exercise": "가벼운 전신 스트레칭 및 코어(플랭크)", "effect": "체형 교정 및 코어 근육 안정화", "reason": "이미 열평형이 맞으므로, 과도한 유산소보다는 앉아있는 시간이 긴 학생들을 위한 척추 교정에 집중합니다."}
+
 def generate_ai_report_stream(food_name, score):
-    report = f"👨‍⚕️ **[분자 영양학 기반 생체 대사 예측]**\n\n분석 결과, 섭취하신 **'{food_name}'**의 종합 밸런스 점수는 **{score}점**입니다. "
-    
+    report = f"👨‍⚕️ **[융합 과학 기반 생체 대사 예측]**\n\n분석 결과, 섭취하신 **'{food_name}'**의 영양·대사 밸런스 점수는 **{score}점**입니다. "
     if score >= 90:
-        report += "황금 비율에 가까운 식단으로, 체내 혈당이 매우 안정적인 곡선을 그리고 있습니다. 신진대사가 최적화되어 에너지가 효율적으로 연소되는 훌륭한 상태입니다."
-    elif score >= 70:
-        report += "전반적으로 괜찮으나, 대사 과정에서 췌장 인슐린 분비에 약간의 부하가 걸릴 수 있습니다. 식곤증 방지를 위해 가벼운 산책으로 포도당을 소모해 주는 것이 좋습니다."
+        report += "황금 비율에 가까운 식단으로, 신진대사가 최적화되어 에너지가 효율적으로 연소되는 훌륭한 상태입니다."
     else:
-        report += "고칼로리, 고탄수화물로 인해 혈액 내 포도당 농도가 급상승하고 있습니다. 세포 내 삼투압 불균형으로 갈증과 부종이 발생할 수 있으니 즉각적인 수분 섭취와 해독 식단이 필요합니다."
-
+        report += "고탄수화물 및 고칼로리로 인해 혈액 내 포도당 농도가 급상승하고 있습니다. 세포 내 삼투압 불균형 및 잉여 지방 축적이 우려되므로, 하단의 '식단 해독'과 '기초 체력 증진' 더블 처방을 반드시 병행하십시오."
     for word in report.split():
         yield word + " "
         time.sleep(0.05)
@@ -125,43 +119,23 @@ def generate_ai_report_stream(food_name, score):
 # 사이드바
 # ============================================================
 with st.sidebar:
-    st.header("⚙️ 메뉴")
+    st.header("⚙️ 기초 정보 입력")
+    user_weight = st.number_input("나의 몸무게 (kg) - 활동량 계산용", min_value=30.0, max_value=120.0, value=50.0, step=1.0)
+    st.divider()
+    
     mode = st.radio("분석 모드", ["🏫 학교 급식", "🏠 자율 식단"])
     st.divider()
 
     if mode == "🏫 학교 급식":
-        school_keyword = st.text_input("학교 이름", placeholder="예) 서현중학교")
-        
-        if "search_clicked" not in st.session_state: st.session_state.search_clicked = False
-        if "school_options" not in st.session_state: st.session_state.school_options = []
-        if "school_data_list" not in st.session_state: st.session_state.school_data_list = []
-
-        if st.button("🔍 학교 검색", use_container_width=True):
-            if school_keyword:
-                with st.spinner("학교 검색 중..."):
-                    school_list = search_school(school_keyword)
-                    if school_list:
-                        st.session_state.school_data_list = school_list
-                        st.session_state.school_options = [f"{s['name']} ({s['region']})" for s in school_list]
-                        st.session_state.search_clicked = True
-                    else:
-                        st.error("검색된 학교가 없습니다.")
-                        st.session_state.search_clicked = False
-
-        selected_school = None
-        if st.session_state.search_clicked and st.session_state.school_options:
-            selected = st.selectbox("학교 선택", st.session_state.school_options)
-            selected_school = st.session_state.school_data_list[st.session_state.school_options.index(selected)]
-
+        school_keyword = st.text_input("학교 검색", "서현중학교")
         meal_date = st.date_input("급식 날짜", datetime.date(2026, 7, 2)) 
         meal_btn = st.button("🍱 급식 조회", use_container_width=True)
-
     else:
-        user_food = st.text_area("오늘 먹은 음식", height=120, placeholder="예) 불닭볶음면, 참치김밥, 콜라")
+        user_food = st.text_area("오늘 먹은 음식", "불닭볶음면, 참치김밥, 콜라")
         analyze_btn = st.button("🤖 AI 분석", use_container_width=True)
 
 # ============================================================
-# 공통 변수 초기화
+# 공통 변수 
 # ============================================================
 current_food_name = ""
 current_score = 0
@@ -170,84 +144,63 @@ current_cal = 0.0
 show_ai_button = False
 
 # ============================================================
-# 메인 화면: 로직 처리
+# 데이터 수집 
 # ============================================================
-if mode == "🏫 학교 급식":
-    if meal_btn:
-        if selected_school:
-            with st.spinner("급식 데이터 분석 중..."):
-                st.session_state.meal_data = get_meal(selected_school["edu_code"], selected_school["school_code"], meal_date.strftime("%Y%m%d"))
-                time.sleep(0.5)
+if mode == "🏫 학교 급식" and meal_btn:
+    with st.spinner("급식 데이터 분석 중..."):
+        schools = search_school(school_keyword)
+        if schools:
+            target = schools[0]
+            meal = get_meal(target["edu_code"], target["school_code"], meal_date.strftime("%Y%m%d"))
+            if meal:
+                st.success(f"✅ {target['name']} 데이터 연동 완료")
+                st.markdown(" ".join([f"`{f}`" for f in meal["menu"]]))
+                nutrition = parse_nutrition(meal["nutrition"])
+                current_cal = float(re.search(r"[\d.]+", meal["calorie"]).group()) if re.search(r"[\d.]+", meal["calorie"]) else 0.0
+                current_score = calculate_score(nutrition)
+                current_food_name = f"{target['name']} 급식"
+                current_nutrition = nutrition
+                show_ai_button = True
+        else: st.error("학교를 찾을 수 없습니다.")
 
-    if st.session_state.get("meal_data"):
-        meal = st.session_state.meal_data
-        st.success(f"✅ {selected_school['name']} 데이터 연동 완료")
-        
-        left, right = st.columns([2, 1])
-        with left:
-            st.subheader("🍱 식단 메뉴")
-            for food in meal["menu"]:
-                st.markdown(f'<div class="food-card">🍽️ {food}</div>', unsafe_allow_html=True)
-        with right:
-            st.subheader("📊 기본 정보")
-            st.metric("제공 칼로리", meal["calorie"])
-            
-        nutrition = parse_nutrition(meal["nutrition"])
-        score = calculate_score(nutrition)
-        
-        cal_match = re.search(r"[\d.]+", meal["calorie"])
-        current_cal = float(cal_match.group()) if cal_match else 0.0
-        current_food_name = f"{selected_school['name']} 급식"
-        current_score = score
-        current_nutrition = nutrition
-        show_ai_button = True
-
-elif mode == "🏠 자율 식단":
+elif mode == "🏠 자율 식단" and analyze_btn:
     food_db = {
         "라면": {"calorie": 500, "탄수화물": 70, "단백질": 10, "지방": 15},
         "마라탕": {"calorie": 800, "탄수화물": 90, "단백질": 20, "지방": 40},
         "불닭볶음면": {"calorie": 550, "탄수화물": 80, "단백질": 12, "지방": 18},
         "김밥": {"calorie": 450, "탄수화물": 65, "단백질": 12, "지방": 14},
-        "참치김밥": {"calorie": 520, "탄수화물": 68, "단백질": 18, "지방": 18},
         "치킨": {"calorie": 700, "탄수화물": 20, "단백질": 40, "지방": 35},
+        "콜라": {"calorie": 150, "탄수화물": 40, "단백질": 0, "지방": 0}
     }
-
-    if analyze_btn:
-        if user_food.strip() == "":
-            st.warning("음식을 입력해주세요.")
-        else:
-            with st.spinner("생체 데이터 분석 중..."): time.sleep(1)
-            foods = [f.strip() for f in user_food.split(",")]
-            total = {"calorie": 0, "탄수화물": 0, "단백질": 0, "지방": 0}
-            for food in foods:
-                for name, data in food_db.items():
-                    if name in food:
-                        for k in total: total[k] += data[k]
-                        break
-
-            score = calculate_score(total)
-            current_cal = total["calorie"]
-            current_food_name = user_food
-            current_score = score
-            current_nutrition = total
-            show_ai_button = True
+    with st.spinner("생체 데이터 분석 중..."): time.sleep(1)
+    foods = [f.strip() for f in user_food.split(",")]
+    total = {"calorie": 0, "탄수화물": 0, "단백질": 0, "지방": 0}
+    for food in foods:
+        for name, data in food_db.items():
+            if name in food:
+                for k in total: total[k] += data[k]
+                break
+    current_cal = total["calorie"]
+    current_score = calculate_score(total)
+    current_food_name = user_food
+    current_nutrition = total
+    show_ai_button = True
 
 # ============================================================
-# 기본 영양 지표 출력 (공통)
+# 메인 분석 리포트
 # ============================================================
 if show_ai_button:
-    st.markdown("---")
     st.header("📊 기초 영양 지표")
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("💯 Health Score", f"{current_score}점")
-    c2.metric("탄수화물", f"{current_nutrition.get('탄수화물', 0)}g")
-    c3.metric("단백질", f"{current_nutrition.get('단백질', 0)}g")
+    c2.metric("총 섭취 칼로리", f"{current_cal} kcal")
+    c3.metric("탄수화물", f"{current_nutrition.get('탄수화물', 0)}g")
     c4.metric("지방", f"{current_nutrition.get('지방', 0)}g")
     st.progress(current_score / 100)
 
     st.markdown("---")
-    st.header("🔬 융합 과학: AI 대사 에너지 및 열평형 분석")
-    st.caption("섭취한 음식이 체내에서 열에너지로 변환되는 과정을 물리·화학적 방정식으로 모델링합니다.")
+    st.header("🔬 융합 과학: 식습관 & 체력 더블 처방 시스템")
+    st.caption("섭취 에너지를 물리학적 '일(Work)'로 환산하여 활동량 부족을 해결하고, 분자 영양학 기반 식단을 동시에 처방합니다.")
     
     if st.button("✨ 체내 열평형 시뮬레이션 및 처방받기", type="primary"):
         with st.container():
@@ -256,45 +209,61 @@ if show_ai_button:
             st.write_stream(generate_ai_report_stream(current_food_name, current_score))
             st.markdown('</div>', unsafe_allow_html=True)
             
-            # 2. [심사위원 압도용] 생체 열역학 시뮬레이터 (LaTeX 활용)
+            # 2. 물리(역학적 에너지) 시뮬레이션 UI
             st.markdown('<div class="physics-card">', unsafe_allow_html=True)
-            st.subheader("🔥 생체 에너지 열평형(Thermal Equilibrium) 방정식")
-            st.write("인체의 질량 보존 및 열역학 제1법칙을 응용하여 잉여 에너지를 산출합니다.")
+            st.subheader("🔥 역학적 에너지 변환 시뮬레이터")
             
-            # 전문적인 LaTeX 수식 렌더링
-            st.latex(r"\Delta E_{body} = E_{in} - (BMR + TEF + NEAT)")
+            st.latex(r"1 \text{ kcal} = 4,184 \text{ Joules} \quad | \quad \text{Work } (W) = \Delta E_p = m \cdot g \cdot h")
             
-            # 임의의 기준값(중학생 기초대사량 기준) 설정
-            estimated_bmr_per_meal = 600 
-            delta_e = current_cal - estimated_bmr_per_meal
+            estimated_bmr = 600 
+            delta_e_kcal = current_cal - estimated_bmr
             
-            pc1, pc2, pc3 = st.columns(3)
-            pc1.metric("입력 에너지 ($E_{in}$)", f"{current_cal} kcal")
-            pc2.metric("기준 소모 열량 ($BMR$ 등)", f"{estimated_bmr_per_meal} kcal")
-            
-            if delta_e > 100:
-                pc3.metric("열 에너지 평형 편차 ($\Delta E$)", f"+{delta_e:.1f} kcal", delta="잉여 에너지 발생 (지방 축적)", delta_color="inverse")
-                st.error("🚨 **열평형 상태 붕괴:** 체내 대사량을 초과하는 잉여 에너지가 발생했습니다. 잉여 열량은 중성지방의 형태로 체내에 축적되며, 체온 조절 시스템에 부하를 줍니다.")
-            elif delta_e < -100:
-                pc3.metric("열 에너지 평형 편차 ($\Delta E$)", f"{delta_e:.1f} kcal", delta="에너지 결손 (체조직 분해)")
-                st.warning("⚠️ **열평형 상태 붕괴:** 섭취 에너지가 부족하여 체내에 저장된 글리코겐과 지방을 태워 열을 발생시키고 있습니다. 지속될 경우 근손실이 발생합니다.")
+            if delta_e_kcal > 0:
+                surplus_joules = delta_e_kcal * 4184
+                g = 9.8 
+                step_height = 0.2 
+                work_per_step = user_weight * g * step_height 
+                steps_needed = int(surplus_joules / work_per_step)
+                
+                st.error(f"🚨 **열평형 상태 붕괴:** {delta_e_kcal:.1f} kcal의 잉여 에너지가 발생했습니다.")
+                pc1, pc2, pc3 = st.columns(3)
+                pc1.metric("잉여 열에너지 ($\Delta E$)", f"{delta_e_kcal:.1f} kcal")
+                pc2.metric("변환된 역학 에너지 ($W$)", f"{surplus_joules:,.0f} J")
+                pc3.metric("물리적 극복치 (계단)", f"{steps_needed:,} 계단", delta="중력 퍼텐셜 에너지 극복", delta_color="inverse")
+                
+                st.info(f"💡 {user_weight}kg의 질량을 가진 사용자가 중력을 극복하고 {surplus_joules:,.0f}J의 일을 수행하려면, 약 **{steps_needed:,}개의 계단**을 올라야 완벽한 열평형을 이룰 수 있습니다. 이를 현실적인 활동량으로 변환하여 처방합니다.")
             else:
-                pc3.metric("열 에너지 평형 편차 ($\Delta E$)", f"{delta_e:.1f} kcal", delta="열평형 상태 안정적")
-                st.success("✅ **완벽한 열평형(Thermal Equilibrium):** 섭취한 칼로리와 대사 열발생량이 완벽하게 균형을 이루어 체조직 변화 없이 쾌적한 생체 리듬을 유지합니다.")
+                st.success("✅ **완벽한 열평형:** 잉여 에너지가 발생하지 않았습니다.")
+                st.latex(r"\Delta E \approx 0 \quad \text{(열역학적 평형 상태)}")
                 
             st.markdown('</div>', unsafe_allow_html=True)
-
             time.sleep(0.5)
             
-            # 3. 맞춤형 저녁 처방전
-            dinner_plan = get_dinner_prescription(current_nutrition)
-            prescription_html = f"""
-            <div class="prescription-card">
-                <div class="prescription-title">🧾 AI 맞춤형 저녁 식단 처방전</div>
-                <p class="prescription-text">🍽️ <b>오늘 저녁 추천 메뉴:</b> <span class="highlight">{dinner_plan['menu']}</span></p>
-                <p class="prescription-text">🧬 <b>생체학적 타겟 효과:</b> {dinner_plan['bio_effect']}</p>
-                <hr style="border: 0; border-top: 1px dashed #6c757d; margin: 15px 0;">
-                <p class="prescription-text" style="font-size: 15px; color: #adb5bd;">💡 <b>AI 처방 사유:</b> {dinner_plan['reason']}</p>
-            </div>
-            """
-            st.markdown(prescription_html, unsafe_allow_html=True)
+            # 3. ✨ [눈길을 사로잡는 더블 처방전 카드 UI]
+            col_diet, col_ex = st.columns(2)
+            
+            # (1) 식습관 개선 처방전 (영양학)
+            diet_plan = get_dinner_prescription(current_nutrition)
+            with col_diet:
+                st.markdown(f"""
+                <div class="prescription-card">
+                    <div class="prescription-title">🧾 영양 밸런스 복구 처방전</div>
+                    <p class="p-text">🍽️ <b>저녁 추천 메뉴:</b> <span class="highlight-diet">{diet_plan['menu']}</span></p>
+                    <p class="p-text">🧬 <b>타겟 효과:</b> {diet_plan['effect']}</p>
+                    <hr style="border: 0; border-top: 1px dashed #6c757d; margin: 15px 0;">
+                    <p class="p-text" style="font-size: 14px; color: #adb5bd;">💡 <b>AI 사유:</b> {diet_plan['reason']}</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+            # (2) 기초 체력 증진 처방전 (물리학/체육학)
+            ex_plan = get_activity_prescription(delta_e_kcal)
+            with col_ex:
+                st.markdown(f"""
+                <div class="exercise-card">
+                    <div class="exercise-title">🏃‍♂️ 기초 체력 증진 처방전</div>
+                    <p class="p-text">🔥 <b>필요 활동량:</b> <span class="highlight-ex">{ex_plan['exercise']}</span></p>
+                    <p class="p-text">💪 <b>타겟 효과:</b> {ex_plan['effect']}</p>
+                    <hr style="border: 0; border-top: 1px dashed #6c757d; margin: 15px 0;">
+                    <p class="p-text" style="font-size: 14px; color: #adb5bd;">💡 <b>AI 사유:</b> {ex_plan['reason']}</p>
+                </div>
+                """, unsafe_allow_html=True)
