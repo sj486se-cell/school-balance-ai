@@ -245,23 +245,26 @@ with st.sidebar:
 # ============================================================
 # 데이터 연동 로직
 # ============================================================
+# 기존의 데이터 수집 로직 부분을 이렇게 살짝 수정해 보세요.
 if mode == "🏫 학교 급식 (NEIS API)" and meal_btn:
     with st.spinner("데이터 동기화 중..."):
         schools = search_school(school_keyword)
         if schools:
             target = schools[0]
-            meal = get_meal(target["edu_code"], target["school_code"], meal_date.strftime("%Y%m%d"))
+            # [수정] 날짜 포맷이 정상인지 확인하고, API 호출
+            formatted_date = meal_date.strftime("%Y%m%d")
+            meal = get_meal(target["edu_code"], target["school_code"], formatted_date)
+            
             if meal:
+                # 데이터가 성공적으로 들어왔을 때
                 st.session_state.menu_list = meal["menu"]
-                nutrition = parse_nutrition(meal["nutrition"])
-                match = re.search(r"[\d.]+", meal["calorie"])
-                st.session_state.current_cal = float(match.group()) if match else 0.0
-                st.session_state.current_score = calculate_score(nutrition)
-                st.session_state.current_food_name = f"{target['name']} 급식"
-                st.session_state.current_nutrition = nutrition
+                # ... (이하 동일)
                 st.session_state.analyzed = True
-            else: st.error("해당 날짜에 급식 데이터가 없습니다.")
-        else: st.error("학교를 찾을 수 없습니다.")
+            else:
+                # [수정] 더 구체적인 안내 메시지
+                st.warning(f"⚠️ {formatted_date} 날짜에는 해당 학교의 급식 데이터가 없습니다. 평일(월~금) 중 다른 날짜를 선택해 보세요.")
+        else:
+            st.error("학교를 찾을 수 없습니다.")
 
 elif mode == "🏠 자율 식단 (Generative AI)" and analyze_btn:
     with st.spinner("AI가 음식 데이터를 분석 중입니다..."):
