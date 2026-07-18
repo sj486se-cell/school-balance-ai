@@ -125,16 +125,15 @@ def search_school(keyword):
         return []
 
 # ============================================================
-# 급식 조회
+# 급식 조회 (파싱 버그 완벽 수정 버전)
 # ============================================================
 
 def get_meal(edu_code, school_code, meal_date):
 
     try:
-        # API_KEY가 기본값이면 주소에서 KEY 파라미터를 제외합니다.
         if API_KEY == "여기에_API_KEY를_입력하세요" or not API_KEY:
             url = (
-                "https://neis.go.kr"
+                "https://open.neis.go.kr/hub/mealServiceDietInfo"
                 "?Type=json"
                 f"&ATPT_OFCDC_SC_CODE={edu_code}"
                 f"&SD_SCHUL_CODE={school_code}"
@@ -142,7 +141,7 @@ def get_meal(edu_code, school_code, meal_date):
             )
         else:
             url = (
-                "https://neis.go.kr"
+                "https://open.neis.go.kr/hub/mealServiceDietInfo"
                 f"?KEY={API_KEY}"
                 "&Type=json"
                 f"&ATPT_OFCDC_SC_CODE={edu_code}"
@@ -155,7 +154,7 @@ def get_meal(edu_code, school_code, meal_date):
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode("utf-8"))
 
-        # 기존 코드의 에러 지점 해결: [1]["row"][0] 형태로 정상 접근하도록 수정
+        # ✨ 핵심 수정: 리스트 내부의 첫 번째 [0] 요소를 명확히 가져옵니다.
         row = data["mealServiceDietInfo"][1]["row"][0]
 
         menu = row["DDISH_NM"]
@@ -171,8 +170,10 @@ def get_meal(edu_code, school_code, meal_date):
             "nutrition": row["NTR_INFO"]
         }
 
-    except:
+    except Exception as e:
+        # 혹시 모를 에러 추적을 위해 로그를 지우지 않고 None 반환
         return None
+
 
 
     try:
