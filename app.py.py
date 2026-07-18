@@ -13,8 +13,7 @@ st.set_page_config(page_title="School Balance AI", page_icon="🍱", layout="wid
 # ★ API KEY 입력 설정
 # ============================================================
 NEIS_API_KEY = "여기에_NEIS_API_KEY를_입력하세요"
-OPENAI_API_KEY = "여기에_OPENAI_API_KEY를_입력하세요"  # OpenAI API Key 입력
-
+OPENAI_API_KEY = "sk-proj-a1b2c3d4e5f6g7h8..."  # 실제 본인의 API 키 입력 (sk- 로 시작함)
 # OpenAI 클라이언트 초기화
 client = OpenAI(api_key=OPENAI_API_KEY)
 
