@@ -369,7 +369,7 @@ if mode == "🏫 학교 급식":
 
             st.error("학교를 선택해주세요.")
 
-        else:
+else:
 
 with st.spinner("급식 정보를 불러오는 중입니다..."):
 
