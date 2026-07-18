@@ -1,90 +1,112 @@
 import streamlit as st
-import pandas as pd
-import time
+import urllib.parse
+import urllib.request
+import json
+import re
+import datetime
 
 st.set_page_config(page_title="School Balance AI", page_icon="🍱", layout="wide")
 
 # ==========================================
-# 1. 사이드바: 사용자 및 식단 정보 입력
+# 0. 진짜 교육청(나이스) API 연동 함수
+# ==========================================
+def get_school_info(school_name):
+    try:
+        url = f"https://open.neis.go.kr/hub/schoolInfo?Type=json&SCHUL_NM={urllib.parse.quote(school_name)}"
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            if "schoolInfo" in data:
+                row = data["schoolInfo"][1]["row"][0]
+                return row["ATPT_OFCDC_SC_CODE"], row["SD_SCHUL_CODE"], row["SCHUL_NM"]
+    except: pass
+    return None, None, None
+
+def get_meal_info(edu_code, sch_code, date_str):
+    try:
+        url = f"https://open.neis.go.kr/hub/mealServiceDietInfo?Type=json&ATPT_OFCDC_SC_CODE={edu_code}&SD_SCHUL_CODE={sch_code}&MLSV_YMD={date_str}"
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            if "mealServiceDietInfo" in data:
+                row = data["mealServiceDietInfo"][1]["row"][0]
+                
+                raw_menu = row["DDISH_NM"]
+                menu_list = [re.sub(r'[0-9\.\(\)]', '', m).strip() for m in raw_menu.split('<br/>')]
+                cal_info = row["CAL_INFO"] 
+                ntr_info = row["NTR_INFO"] 
+                
+                return menu_list, cal_info, ntr_info
+    except: pass
+    return None, None, None
+
+# ==========================================
+# 1. 사이드바: 검색기 (학기 중 날짜로 기본 세팅)
 # ==========================================
 with st.sidebar:
-    st.title("🧑‍🎓 나의 급식 정보")
+    st.title("🏫 전국 학교 급식 연동기")
+    st.caption("나이스(NEIS) 교육행정 정보시스템 실시간 연동")
     
-    # 자연스러운 디테일: 학교 이름을 기본값으로 넣어 친숙함 어필
-    school_name = st.text_input("학교 검색", "서현중학교")
-    user_grade = st.selectbox("학년", ["1학년", "2학년", "3학년"])
-    user_gender = st.radio("성별", ["남학생", "여학생"])
+    school_input = st.text_input("학교 검색 (예: 서현중학교)", "서현중학교")
     
-    st.divider()
-    st.subheader("🍱 오늘의 점심 메뉴")
-    # 해커톤 시연용 가상 데이터 입력창 (실제로는 나이스 API 연동 예정임을 어필)
-    menu_input = st.text_area("메뉴를 입력하세요 (쉼표로 구분)", "잡곡밥, 돈육김치찌개, 고등어구이, 시금치나물, 깍두기")
+    # 🌟 핵심 수정: 기본 날짜를 방학 전인 '7월 2일(목)'로 고정하여 무조건 데이터가 나오게 함!
+    demo_date = datetime.date(2026, 7, 2)
+    target_date = st.date_input("조회할 날짜 (학기 중 평일)", demo_date)
+    date_str = target_date.strftime("%Y%m%d")
     
-    analyze_btn = st.button("AI 영양 분석 시작 🔍", use_container_width=True)
+    fetch_btn = st.button("실제 급식 데이터 불러오기 📡", type="primary", use_container_width=True)
+    
+    st.info("💡 **Demo Tip:** 현재는 방학 기간이므로, 실제 데이터가 있는 학기 중 날짜(예: 7월 초)로 조회합니다.")
 
 # ==========================================
-# 2. 메인 화면: AI 분석 결과 및 대시보드
+# 2. 메인 화면: 리얼 메뉴판 및 분석
 # ==========================================
-st.title("🍱 School Balance: 청소년 맞춤형 AI 영양사")
-st.caption(f"청소년기 필수 영양소 기준치와 오늘 {school_name}의 급식을 비교 분석합니다.")
+st.title("🍱 School Balance: 공공데이터 기반 AI 영양사")
 
-if analyze_btn:
-    with st.spinner(f"{school_name} {user_grade} 권장 섭취량과 메뉴 데이터를 매칭하고 있습니다..."):
-        time.sleep(1.5) # 분석하는 듯한 극적인 연출
+if fetch_btn:
+    with st.spinner("나이스(NEIS) 메인 서버에서 실제 데이터를 추출하고 있습니다..."):
+        edu_code, sch_code, real_school_name = get_school_info(school_input)
         
-    st.success("✅ 영양 분석이 완료되었습니다!")
-    
-    # 🌟 1. 핵심 지표 시각화 (대시보드 형태)
-    st.subheader("📊 오늘의 급식 영양 밸런스")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    # 가상의 영양 분석 결과 데이터
-    col1.metric(label="총 칼로리", value="750 kcal", delta="-50 kcal (적정)")
-    col2.metric(label="탄수화물", value="110g", delta="초과 주의", delta_color="inverse")
-    col3.metric(label="단백질", value="35g", delta="+5g (우수)")
-    col4.metric(label="지방", value="18g", delta="적정 수준")
-    
-    st.markdown("---")
-    
-    # 🌟 2. 프로그레스 바를 이용한 시각적 경고
-    st.subheader("⚠️ 필수 영양소 부족/과다 경고")
-    c1, c2 = st.columns(2)
-    
-    with c1:
-        st.write("**칼슘 (성장기 필수)**: 40% 달성")
-        st.progress(0.40) # 40% 채워짐 (부족)
-        
-        st.write("**비타민 C (면역력)**: 30% 달성")
-        st.progress(0.30) # 30% 채워짐 (부족)
-        
-    with c2:
-        st.write("**나트륨 (김치찌개/깍두기 영향)**: 120% (경고)")
-        st.progress(1.0) # 100% 초과 (위험)
-        
-        st.write("**식이섬유 (채소류)**: 85% 달성")
-        st.progress(0.85) # 양호
-        
-    st.markdown("---")
-    
-    # 🌟 3. AI 맞춤형 저녁/간식 솔루션 제공
-    st.subheader("💡 AI 영양사의 맞춤형 솔루션")
-    
-    st.error(f"🚨 **분석 결과:** 오늘의 점심 메뉴({menu_input.split(',')[1]})로 인해 **나트륨 섭취가 높고**, 성장기에 필수적인 **칼슘과 비타민 C가 다소 부족**합니다.")
-    
-    st.success("🎯 **오늘 저녁 & 간식 추천 조합**")
-    st.write("부족한 영양소를 채우고 나트륨을 배출하기 위해 다음 식단을 추천합니다.")
-    
-    # 표 형태로 깔끔하게 제안
-    recommend_df = pd.DataFrame(
-        [
-            {"추천 메뉴": "바나나 1개", "보충 효과": "칼륨 풍부 (나트륨 배출 도움)", "분류": "하교 후 간식"},
-            {"추천 메뉴": "우유 1팩 (200ml)", "보충 효과": "칼슘 보충 (성장기 필수)", "분류": "하교 후 간식"},
-            {"추천 메뉴": "닭가슴살 샐러드", "보충 효과": "비타민 C 및 단백질 보충", "분류": "저녁 식사"}
-        ]
-    )
-    st.table(recommend_df)
-    
-    st.info("※ 본 솔루션은 보건복지부 '한국인 영양소 섭취기준(청소년기)' 데이터를 기반으로 산출되었습니다.")
+        if not sch_code:
+            st.error("❌ 학교를 찾을 수 없습니다. 정확한 학교명을 입력해주세요.")
+        else:
+            menu_list, cal_info, ntr_info = get_meal_info(edu_code, sch_code, date_str)
+            
+            # 🌟 방학/주말 예외 처리 (데이터가 없을 때 당황하지 않고 스마트하게 안내)
+            if not menu_list:
+                st.warning(f"⚠️ {target_date.strftime('%Y년 %m월 %d일')}에는 등록된 급식 정보가 없습니다.")
+                st.error("💡 **AI 안내:** 선택하신 날짜는 **방학, 주말, 또는 공휴일**일 가능성이 높습니다. 왼쪽 달력에서 **'학기 중 평일(예: 7월 2일)'**을 선택하여 다시 시도해 주세요!")
+            else:
+                st.success(f"✅ 나이스(NEIS) 연동 성공! [{real_school_name}]의 실제 데이터입니다.")
+                
+                col1, col2 = st.columns([1, 1.5])
+                
+                with col1:
+                    st.subheader("🍽️ 오늘의 실제 식단표")
+                    menu_html = "<div style='background-color: #f8f9fa; padding: 20px; border-radius: 15px; border: 2px solid #e9ecef; text-align: center;'>"
+                    for menu in menu_list:
+                        menu_html += f"<h4 style='color: #2b8a3e; margin: 10px;'>{menu}</h4>"
+                    menu_html += "</div>"
+                    st.markdown(menu_html, unsafe_allow_html=True)
+                    
+                with col2:
+                    st.subheader("📊 교육청 공식 영양 데이터")
+                    st.metric(label="제공 총 칼로리", value=cal_info)
+                    
+                    st.markdown("**[상세 영양 성분 분석]**")
+                    ntr_dict = {}
+                    for item in ntr_info.split('<br/>'):
+                        if ":" in item:
+                            k, v = item.split(':')
+                            ntr_dict[k.strip()] = v.strip()
+                            
+                    df_ntr = pd.DataFrame(list(ntr_dict.items()), columns=['영양소', '함유량(g/mg)'])
+                    st.dataframe(df_ntr, use_container_width=True, hide_index=True)
 
-else:
-    st.info("👈 왼쪽 사이드바에서 학교와 급식 메뉴를 입력하고 '분석 시작' 버튼을 눌러보세요!")
+                st.markdown("---")
+                st.subheader("💡 AI 맞춤형 밸런스 리포트")
+                
+                if "나트륨(mg)" in ntr_dict and float(ntr_dict["나트륨(mg)"]) > 1000:
+                    st.error("🚨 **나트륨 초과 경고:** 오늘 급식의 나트륨 함량이 다소 높습니다. 하교 후 나트륨 배출을 돕는 **'바나나'나 '토마토'** 섭취를 강력히 권장합니다.")
+                else:
+                    st.success("✅ **영양 밸런스 우수:** 전반적으로 영양소가 고르게 분포된 건강한 식단입니다.")
