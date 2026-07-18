@@ -1,8 +1,4 @@
-# ============================================================
-# School Balance AI v2.0
 # PART 1 : 기본 설정 + API + 공통 함수
-# ============================================================
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -12,41 +8,29 @@ import json
 import re
 import datetime
 import time
-
-# ============================================================
-# 페이지 설정
-# ============================================================
-
 st.set_page_config(
     page_title="School Balance AI",
     page_icon="🍱",
     layout="wide"
 )
-
 # ============================================================
 # ★ 본인의 NEIS API KEY 입력
 # ============================================================
-
 API_KEY = "여기에_API_KEY를_입력하세요"
-
 # ============================================================
 # CSS
 # ============================================================
-
 st.markdown("""
 <style>
-
 .main-title{
     font-size:42px;
     font-weight:bold;
     color:#2E8B57;
 }
-
 .sub-title{
     color:#666666;
     font-size:18px;
 }
-
 .food-card{
     background:#F7F9FA;
     padding:12px;
@@ -54,38 +38,29 @@ st.markdown("""
     margin-bottom:8px;
     border-left:6px solid #2E8B57;
 }
-
 .score-title{
     font-size:30px;
     color:#2E8B57;
     font-weight:bold;
 }
-
 </style>
 """, unsafe_allow_html=True)
-
 # ============================================================
 # 제목
 # ============================================================
-
 st.markdown(
     "<div class='main-title'>🍱 School Balance AI</div>",
     unsafe_allow_html=True
 )
-
 st.markdown(
     "<div class='sub-title'>실시간 학교 급식 AI 영양 분석 시스템</div>",
     unsafe_allow_html=True
 )
-
 st.divider()
-
 # ============================================================
 # 학교 검색
 # ============================================================
-
 def search_school(keyword):
-
     try:
         # API_KEY가 기본값이면 주소에서 KEY 파라미터를 제외합니다.
         if API_KEY == "여기에_API_KEY를_입력하세요" or not API_KEY:
@@ -103,14 +78,10 @@ def search_school(keyword):
             )
 
         req = urllib.request.Request(url)
-
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode("utf-8"))
-
         rows = data["schoolInfo"][1]["row"]
-
         schools = []
-
         for row in rows:
             schools.append({
                 "name": row["SCHUL_NM"],
@@ -118,18 +89,13 @@ def search_school(keyword):
                 "edu_code": row["ATPT_OFCDC_SC_CODE"],
                 "school_code": row["SD_SCHUL_CODE"]
             })
-
         return schools
-
     except:
         return []
-
 # ============================================================
 # 급식 조회 (파싱 버그 완벽 수정 버전)
 # ============================================================
-
 def get_meal(edu_code, school_code, meal_date):
-
     try:
         if API_KEY == "여기에_API_KEY를_입력하세요" or not API_KEY:
             url = (
@@ -153,17 +119,13 @@ def get_meal(edu_code, school_code, meal_date):
 
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode("utf-8"))
-
         # ✨ 핵심 수정: 리스트 내부의 첫 번째 [0] 요소를 명확히 가져옵니다.
         row = data["mealServiceDietInfo"][1]["row"][0]
-
         menu = row["DDISH_NM"]
-
         menu = [
             re.sub(r"[0-9\.\(\)]", "", food).strip()
             for food in menu.split("<br/>")
         ]
-
         return {
             "menu": menu,
             "calorie": row["CAL_INFO"],
@@ -173,11 +135,7 @@ def get_meal(edu_code, school_code, meal_date):
     except Exception as e:
         # 혹시 모를 에러 추적을 위해 로그를 지우지 않고 None 반환
         return None
-
-
-
     try:
-
         url = (
             "https://open.neis.go.kr/hub/mealServiceDietInfo"
             f"?KEY={API_KEY}"
@@ -186,77 +144,48 @@ def get_meal(edu_code, school_code, meal_date):
             f"&SD_SCHUL_CODE={school_code}"
             f"&MLSV_YMD={meal_date}"
         )
-
         req = urllib.request.Request(url)
-
         with urllib.request.urlopen(req) as response:
-
             data = json.loads(response.read().decode("utf-8"))
-
         row = data["mealServiceDietInfo"][1]["row"][0]
-
         menu = row["DDISH_NM"]
-
         menu = [
-
             re.sub(r"[0-9\.\(\)]", "", food).strip()
-
             for food in menu.split("<br/>")
-
         ]
-
         return {
-
             "menu": menu,
             "calorie": row["CAL_INFO"],
             "nutrition": row["NTR_INFO"]
-
         }
-
     except:
-
         return None
-
 # ============================================================
 # 영양정보 파싱 (개선 버전)
 # ============================================================
-
 def parse_nutrition(text):
-
     nutrition = {}
-
     if not text:
         return nutrition
-
     items = text.split("<br/>")
-
     for item in items:
-
         if ":" not in item:
             continue
-
         name, value = item.split(":", 1)
-
         # 단위 제거
         name = re.sub(r"\(.*?\)", "", name).strip()
-
         # 숫자만 추출
         match = re.search(r"[\d.]+", value)
-
         if match:
             nutrition[name] = float(match.group())
         else:
             nutrition[name] = 0
-
     return nutrition
 # ============================================================
 # Health Score
 # ============================================================
-
 def calculate_score(nutrition):
-
     score = 100
-
     protein = nutrition.get("단백질", 0)
     fat = nutrition.get("지방", 0)
     calcium = nutrition.get("칼슘", 0)
@@ -1039,7 +968,10 @@ if mode == "🏠 자율 식단":
 # PART 6 : 식단 기록 저장 + 주간 건강 리포트 (최종 수정본)
 # ============================================================
 
-
+st.write(
+    "기록 데이터:",
+    st.session_state.get("diet_result")
+)
 # 기록 저장 공간 생성
 
 if "diet_history" not in st.session_state:
