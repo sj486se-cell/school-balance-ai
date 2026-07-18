@@ -575,11 +575,11 @@ if mode == "🏫 학교 급식":
 # PART 4 : AI 추천 음식 & 영양 리포트
 # ============================================================
 
-if mode in "🏫 학교 급식":
+if mode == "🏫 학교 급식":
 
     if "meal_data" in st.session_state:
             meal = st.session_state.meal_data
-            if meal is not None:
+                if meal is not None:
 
             nutrition = parse_nutrition(meal["nutrition"])
 
